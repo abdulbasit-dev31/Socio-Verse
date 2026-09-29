@@ -1,0 +1,28 @@
+{
+    "name": "socioverse",
+    "version": "1.0.0",
+    "description": "SocioVerse - Social Networking Platform by Abdul Basit",
+    "main": "server.js",
+    "scripts": {
+        "start": "node server.js",
+        "dev": "node --watch server.js",
+        "test": "node --test --test-concurrency=1"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.19.2",
+        "jsonwebtoken": "^9.0.2",
+        "mongoose": "^8.4.0",
+        "nodemailer": "^10.0.12",
+        "socket.io": "^4.7.5"
+    },
+    "engines": {
+        "node": ">=22.0.0"
+    },
+    "devDependencies": {
+        "mongodb-memory-server-core": "^11.3.0",
+        "socket.io-client": "^4.8.4"
+    }
+}

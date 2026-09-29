@@ -1,0 +1,11 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SocioVerse</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="topbar"><button class="icon-btn menu-toggle" id="menuBtn"><i class="fas fa-bars"></i></button><a href="#/feed" class="logo gradtxt">SocioVerse</a>
+<div class="searchbox"><i class="fas fa-search"></i><input id="search" placeholder="Search people..." autocomplete="off"><div class="results" id="results"></div></div><div class="grow"></div>
+<a href="#/chats" class="icon-btn" style="display:flex;align-items:center;justify-content:center"><i class="fas fa-comment-dots"></i><span class="badge" id="msgBadge" data-n="0"></span></a>
+<button class="icon-btn" id="bell"><i class="fas fa-bell"></i><span class="badge" id="bellBadge" data-n="0"></span></button></header>
+<div class="layout"><aside class="sidebar" id="sidebar"><div class="card nav" id="nav"></div></aside><main id="view"></main><aside class="right" id="right"></aside></div>
+<div class="panel" id="panel"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px"><h3>Notifications</h3><div><button class="btn sm ghost" id="readAll">Mark all read</button> <button class="icon-x" id="closePanel"><i class="fas fa-times"></i></button></div></div><div id="notifs"></div></div>
+<div id="modalRoot"></div><div class="toasts" id="toasts"></div>
+<script src="/socket.io/socket.io.js"></script><script src="script.js"></script></body></html>

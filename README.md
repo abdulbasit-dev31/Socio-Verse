@@ -14,9 +14,9 @@ Database connection failures stop startup with a clear error. Verify the connect
 
 ## Deploy to Vercel
 
-The repository root deploys as one Vercel project:  is served as static files and  runs the Express + Socket.IO backend as a function (see ). Set these project environment variables: , ,  (the deployed origin),  and, for password-reset email, the SMTP settings. MongoDB Atlas must allow connections from anywhere () because Vercel uses dynamic IPs.
+The repository root deploys as one Vercel project: `frontend/` is served as static files and `api/index.js` runs the Express + Socket.IO backend as a function (see `vercel.json`). Set these project environment variables: `MONGO_URI`, `JWT_SECRET`, `CLIENT_URL` (the deployed origin), `NODE_ENV=production` and, for password-reset email, the SMTP settings. MongoDB Atlas must allow connections from anywhere (`0.0.0.0/0`) because Vercel uses dynamic IPs.
 
-Function instances do not share memory, so socket events and presence are relayed through MongoDB change streams (, collection ); this requires a replica set, which Atlas provides. Sockets use the WebSocket transport only and reconnect automatically when a function reaches its 5-minute maximum duration. Vercel limits request bodies to 4.5MB, which sets the upload limits below; JSON responses are streamed so large feeds are not affected.
+Function instances do not share memory, so socket events and presence are relayed through MongoDB change streams (`@socket.io/mongo-adapter`, collection `socket.io-adapter-events`); this requires a replica set, which Atlas provides. Sockets use the WebSocket transport only and reconnect automatically when a function reaches its 5-minute maximum duration. Vercel limits request bodies to 4.5MB, which sets the upload limits below; JSON responses are streamed so large feeds are not affected.
 
 ## Password reset
 

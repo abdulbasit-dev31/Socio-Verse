@@ -14,7 +14,7 @@ function logout() { localStorage.removeItem('token'); sessionStorage.removeItem(
 const ago = d => { const s = (Date.now() - new Date(d)) / 1000; return s < 60 ? 'just now' : s < 3600 ? ~~(s / 60) + 'm ago' : s < 86400 ? ~~(s / 3600) + 'h ago' : new Date(d).toLocaleDateString(); };
 const av = (u, c = '') => mediaURL(u?.avatar) ? `<img class="av ${c}" src="${mediaURL(u.avatar)}" alt="">` : `<div class="av ${c}">${esc((u?.fullName || '?')[0]).toUpperCase()}</div>`;
 const spinner = '<div class="center"><span class="spin"></span></div>';
-const readFile = (f, maxMB = 8) => new Promise((ok, no) => { if (!f) return no(new Error('Choose a file')); if (!/^(image\/(png|jpeg|gif|webp)|video\/(mp4|webm|ogg))$/.test(f.type) || f.size > maxMB * 1e6) { const error = new Error('Choose a supported image or video (max ' + maxMB + 'MB)'); toast(error.message, true); return no(error); } const r = new FileReader(); r.onload = () => ok({ data: r.result, type: f.type.startsWith('video') ? 'video' : 'image' }); r.onerror = () => no(new Error('Could not read file')); r.readAsDataURL(f); });
+const readFile = (f, maxMB = 3) => new Promise((ok, no) => { if (!f) return no(new Error('Choose a file')); if (!/^(image\/(png|jpeg|gif|webp)|video\/(mp4|webm|ogg))$/.test(f.type) || f.size > maxMB * 1e6) { const error = new Error('Choose a supported image or video (max ' + maxMB + 'MB)'); toast(error.message, true); return no(error); } const r = new FileReader(); r.onload = () => ok({ data: r.result, type: f.type.startsWith('video') ? 'video' : 'image' }); r.onerror = () => no(new Error('Could not read file')); r.readAsDataURL(f); });
 function modal(html) { const o = document.createElement('div'); o.className = 'overlay'; o.innerHTML = `<div class="modal">${html}</div>`; o.onclick = e => { if (e.target === o) o.remove(); }; $('#modalRoot').append(o); return o; }
 const closeModal = () => document.querySelectorAll('.overlay').forEach(o => o.remove());
 
@@ -24,7 +24,7 @@ const closeModal = () => document.querySelectorAll('.overlay').forEach(o => o.re
   me = await api('/users/me');
   $('#nav').innerHTML = `<a href="#/feed" data-r="feed"><i class="fas fa-home"></i>Feed</a><a href="#/profile/${me._id}" data-r="profile"><i class="fas fa-user"></i>Profile</a><a href="#/chats" data-r="chats"><i class="fas fa-comments"></i>Chats</a><a href="#/friends" data-r="friends"><i class="fas fa-user-friends"></i>Friends <span class="badge" id="frBadge" data-n="0" style="position:static"></span></a>
   <button data-act="blockedList"><i class="fas fa-ban"></i>Blocked</button><button data-act="changePass"><i class="fas fa-key"></i>Password</button><button data-act="logout"><i class="fas fa-sign-out-alt"></i>Logout</button>`;
-  socket = io({ auth: { token } });
+  socket = io({ auth: { token }, transports: ['websocket'] });
   socket.on('online:list', l => online = new Set(l)); socket.on('presence', p => { p.online ? online.add(p.id) : online.delete(p.id); if (location.hash.startsWith('#/chats')) updatePresence(); });
   socket.on('notification', n => { toast(notifText(n)); loadNotifs(); });
   socket.on('friend:update', () => { refreshFriendBadge(); if (location.hash === '#/friends') route(); });
@@ -111,7 +111,7 @@ function editProfile() {
   let av_ = me.avatar, cv = me.cover; const o = modal(`<h3>Edit Profile</h3><div class="fg"><label>Full name</label><input id="e-name" value="${esc(me.fullName)}"></div><div class="fg"><label>Bio</label><textarea id="e-bio" maxlength="200">${esc(me.bio)}</textarea></div><div class="fg"><label>Location</label><input id="e-loc" value="${esc(me.location)}"></div>
   <div class="fg"><label>Profile picture</label><input type="file" id="e-av" accept="image/*"> <button class="btn sm ghost" id="e-avx" type="button">Remove</button></div><div class="fg"><label>Cover photo</label><input type="file" id="e-cv" accept="image/*"> <button class="btn sm ghost" id="e-cvx" type="button">Remove</button></div>
   <div class="fg"><label>Account privacy</label><select id="e-priv"><option value="0">Public</option><option value="1" ${me.isPrivate ? 'selected' : ''}>Private (friends only)</option></select></div><div class="foot"><button class="btn ghost" data-act="closeModal">Cancel</button><button class="btn" id="e-save">Save</button></div>`);
-  $('#e-av', o).onchange = async e => { try { av_ = (await readFile(e.target.files[0], 2)).data; } catch {} }; $('#e-cv', o).onchange = async e => { try { cv = (await readFile(e.target.files[0], 2)).data; } catch {} };
+  $('#e-av', o).onchange = async e => { try { av_ = (await readFile(e.target.files[0], 1.5)).data; } catch {} }; $('#e-cv', o).onchange = async e => { try { cv = (await readFile(e.target.files[0], 1.5)).data; } catch {} };
   $('#e-avx', o).onclick = () => { av_ = ''; toast('Picture will be removed on save'); }; $('#e-cvx', o).onclick = () => { cv = ''; toast('Cover will be removed on save'); };
   $('#e-save', o).onclick = async () => { await api('/users/me', 'PUT', { fullName: $('#e-name', o).value, bio: $('#e-bio', o).value, location: $('#e-loc', o).value, avatar: av_, cover: cv, isPrivate: $('#e-priv', o).value === '1' }); me = await api('/users/me'); closeModal(); toast('Profile updated'); route(); };
 }

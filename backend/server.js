@@ -5,13 +5,34 @@ const { Server } = require('socket.io'), connectDB = require('./config/db'), Use
 const { isBlocked } = require('./utils');
 const { validate } = require('./middleware/validate');
 
-function createServer() {
+// Chunked writes count as a streamed response, which Vercel's 4.5MB response-body limit does not apply to.
+function streamJson(req, res, next) {
+  res.json = body => {
+    const data = Buffer.from(JSON.stringify(body) ?? '');
+    if (!res.get('Content-Type')) res.type('json');
+    for (let i = 0; i < data.length; i += 1 << 20) res.write(data.subarray(i, i + (1 << 20)));
+    res.end(); return res;
+  };
+  next();
+}
+
+// Options used by the serverless entry (api/index.js): ready gates traffic until the database and
+// Socket.IO adapter are set up; trustProxy/stream adapt to Vercel's proxy and payload limits.
+function createServer({ ready, trustProxy = false, stream = false } = {}) {
   const app = express(), server = http.createServer(app);
   const origin = process.env.CLIENT_URL || 'http://localhost:5000';
   const io = new Server(server, { cors: { origin }, maxHttpBufferSize: 10000 });
-  const online = new Map();
+  // Presence comes from connected sockets so it stays correct when several instances share an adapter.
+  const localIds = () => new Set([...io.of('/').sockets.values()].map(s => s.data.uid));
+  const online = async () => { try { return new Set((await io.fetchSockets()).map(s => s.data.uid)); } catch { return localIds(); } };
   app.disable('x-powered-by');
+  if (trustProxy) app.set('trust proxy', 1);
   app.set('io', io); app.set('online', online);
+  if (ready) {
+    app.use((req, res, next) => ready.then(() => next(), next));
+    io.use((socket, next) => ready.then(() => next(), next));
+  }
+  if (stream) app.use('/api', streamJson);
   app.use(cors({ origin }));
   app.use((req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); res.set('Referrer-Policy', 'no-referrer'); next(); });
   app.use(express.json({ limit: '50mb' }));
@@ -32,8 +53,8 @@ function createServer() {
   });
   io.on('connection', socket => {
     const id = socket.uid;
-    socket.join(id); online.set(id, (online.get(id) || 0) + 1);
-    io.emit('presence', { id, online: true }); socket.emit('online:list', [...online.keys()]);
+    socket.data.uid = id; socket.join(id);
+    io.emit('presence', { id, online: true }); online().then(ids => socket.emit('online:list', [...ids]));
     const expiry = setInterval(() => { if (socket.expires * 1000 <= Date.now()) socket.disconnect(true); }, 60000);
     expiry.unref();
     socket.on('typing', async (payload) => {
@@ -45,9 +66,8 @@ function createServer() {
     });
     socket.on('disconnect', () => {
       clearInterval(expiry);
-      const count = (online.get(id) || 1) - 1;
-      if (count <= 0) { online.delete(id); io.emit('presence', { id, online: false }); }
-      else online.set(id, count);
+      // Sockets have already left their rooms here, so an empty room means the user's last tab closed.
+      io.in(id).fetchSockets().then(rest => { if (!rest.length) io.emit('presence', { id, online: false }); }).catch(() => {});
     });
   });
   return { app, server, io };

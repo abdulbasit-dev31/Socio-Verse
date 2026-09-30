@@ -6,15 +6,21 @@ const { createServer } = require('../backend/server');
 
 if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) throw new Error('Set JWT_SECRET to a random value of at least 32 characters');
 
-let io;
 // Function instances do not share memory, so socket events and presence go through MongoDB change streams.
-const ready = connectDB().then(async () => {
+async function init() {
+  await connectDB();
   const events = mongoose.connection.db.collection('socket.io-adapter-events');
   await events.createIndex({ createdAt: 1 }, { expireAfterSeconds: 3600 });
   io.adapter(createAdapter(events, { addCreatedAtField: true }));
+}
+let pending;
+// A failed start is retried on the next request instead of leaving this instance broken.
+const ready = () => pending ||= init().catch(error => {
+  pending = null;
+  console.error('Startup failed:', error.message, error.cause?.message || '');
+  throw error;
 });
-ready.catch(error => console.error('Startup failed:', error.message, error.cause?.message || ''));
 
-const app = createServer({ ready, trustProxy: true, stream: true });
-io = app.io;
-module.exports = app.server;
+const { server, io } = createServer({ ready, trustProxy: true, stream: true });
+ready().catch(() => {});
+module.exports = server;

@@ -16,8 +16,8 @@ function streamJson(req, res, next) {
   next();
 }
 
-// Options used by the serverless entry (api/index.js): ready gates traffic until the database and
-// Socket.IO adapter are set up; trustProxy/stream adapt to Vercel's proxy and payload limits.
+// Options used by the serverless entry (api/index.js): ready() returns a promise that gates traffic until the
+// database and Socket.IO adapter are set up; trustProxy/stream adapt to Vercel's proxy and payload limits.
 function createServer({ ready, trustProxy = false, stream = false } = {}) {
   const app = express(), server = http.createServer(app);
   const origin = process.env.CLIENT_URL || 'http://localhost:5000';
@@ -29,8 +29,8 @@ function createServer({ ready, trustProxy = false, stream = false } = {}) {
   if (trustProxy) app.set('trust proxy', 1);
   app.set('io', io); app.set('online', online);
   if (ready) {
-    app.use((req, res, next) => ready.then(() => next(), next));
-    io.use((socket, next) => ready.then(() => next(), next));
+    app.use((req, res, next) => ready().then(() => next(), next));
+    io.use((socket, next) => ready().then(() => next(), next));
   }
   if (stream) app.use('/api', streamJson);
   app.use(cors({ origin }));

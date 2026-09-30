@@ -1,7 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": null,
-  "installCommand": "npm install --prefix backend --omit=dev --no-audit --no-fund",
   "buildCommand": "",
   "outputDirectory": "frontend",
   "functions": {

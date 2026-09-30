@@ -2,5 +2,8 @@
   "name": "socioverse-vercel",
   "private": true,
   "description": "Vercel deployment wrapper; the app lives in backend/ and frontend/.",
+  "scripts": {
+    "postinstall": "npm install --prefix backend --omit=dev --no-audit --no-fund"
+  },
   "engines": { "node": "24.x" }
 }
